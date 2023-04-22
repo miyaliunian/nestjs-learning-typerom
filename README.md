@@ -472,3 +472,311 @@ import { Logger } from 'nestjs-pino';
 ```
 
 ![image-20230417154341024](/Users/doudoufei/Library/Application Support/typora-user-images/image-20230417154341024.png)
+
+##  find* 查询
+
+```javascript
+   this.logsRepository
+        .createQueryBuilder('logs')、
+        .select('logs.result, COUNT(logs.result) as count')
+        // .addSelect('COUNT("logs.result")', 'count')
+        .leftJoinAndSelect('logs.user', 'user') // ORM精髓
+        .where('user.id = :id', { id })
+        .groupBy('logs.result')
+        .getRawMany()
+```
+
+# Query Builder
+
+```javascript
+this.usersRepository.query(
+      'select logs.result, COUNT(logs.result) as rest from logs, user where user.id = logs.user_id and user.id = 1 group by logs.result',
+    );
+```
+
+## 
+
+## 日志系统
+
+安装依赖
+
+```bash
+pnpm i nest-winston winston
+```
+
+
+
+安装依赖  处理滚动日志
+
+```bash
+pnpm i winston-daily-rotate-file
+
+```
+
+
+
+### 设置日志级别
+
+
+
+## 全局异常过滤
+
+###  
+
+### 自定义异常Filter
+
+- 前置
+
+```javascript
+switchToHttp()是一个Nest.js框架提供的方法，用于获取到HTTP请求和响应对象。在Nest.js中，每个请求都会创建一个上下文对象，其中包含了当前请求和响应对象。通过switchToHttp()方法可以将当前的执行上下文切换到HTTP上下文中，从而获取到当前的请求和响应对象。
+
+具体地说，在控制器、拦截器或管道等Nest.js的中间件中，我们可以使用switchToHttp()方法来访问当前请求和响应对象。例如，在控制器方法中，可以使用以下代码来获取请求和响应对象：
+
+@Get()
+async findAll(@Req() request, @Res() response) {
+  const httpContext = context.switchToHttp();
+  const httpRequest = httpContext.getRequest();
+  const httpResponse = httpContext.getResponse();
+
+  // access to the request and response objects
+}
+这段代码中，我们首先使用@Req()和@Res()装饰器来获取到请求和响应对象，并随后使用switchToHttp()方法获取到HTTP上下文对象。通过调用getRequest()和getResponse()方法，就可以获得当前的请求和响应对象了。
+```
+
+
+
+- http-exception.filter.ts
+
+```typescript
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  LoggerService,
+} from '@nestjs/common';
+import { Request, Response } from 'express';
+
+@Catch(HttpException) // 只处理HttpException而不处理其它的
+export class HttpExceptionFilter implements ExceptionFilter {
+  // 接入日志 这就是依赖注入的好处
+  constructor(private logger: LoggerService) {}
+  // exception 正在处理的异常对象
+  // ArgumentsHost 是一个功能强大的实用程序对象，
+  catch(exception: any, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
+    const status = exception.getStatus();
+    this.logger.error(exception.message, exception.stack);
+    response.status(status).json({
+      statusCode: status,
+      timestamp: new Date().toISOString(),
+      path: request.path,
+      message: exception.message || HttpException.name,
+      exceptionName: HttpException.name,
+    });
+    // throw new Error('Method not implemented.');
+  }
+}
+
+
+```
+
+```javascript
+这是一个Node.js中Express框架中常用的方法，用于在HTTP响应中同时设置状态码和JSON数据。
+
+其中，response是一个代表HTTP响应的对象，status是要设置的HTTP状态码，json()方法用于将要作为响应主体发送的JavaScript对象转换为JSON字符串并设置响应头Content-Type为application/json。
+
+这个方法可以传递任何JavaScript对象，包括数组和嵌套对象，它们会被自动序列化为JSON格式。
+
+示例：
+
+app.get('/users', (req, res) => {
+  const users = [{ name: 'Alice', age: 30 }, { name: 'Bob', age: 40 }];
+  res.status(200).json(users);
+});
+上面的代码定义了一个路由，当客户端使用GET请求/users时，它将返回一个状态码为200并附带用户列表的JSON响应。
+```
+
+
+
+- 自定义Filter前置
+
+```javascript
+HttpAdapterHost 是 NestJS 中的一个类，它提供了一个访问 HTTP 适配器（HttpAdapter）的接口。HTTP 适配器是负责处理传入的 HTTP 请求和出站响应的组件。
+
+使用 HttpAdapterHost 可以方便地获取当前应用程序中正在使用的 HTTP 适配器，并在需要时执行与其相关的操作。例如，您可以使用 HttpAdapterHost 来访问当前应用程序的 request 和 response 对象，或者用于注册全局拦截器等。
+
+以下是一个示例，在控制器中使用 HttpAdapterHost 获取请求对象并记录请求路径：
+
+typescript
+import { Controller, Get } from '@nestjs/common';
+import { HttpAdapterHost } from '@nestjs/core';
+
+@Controller()
+export class AppController {
+  constructor(private httpAdapterHost: HttpAdapterHost) {}
+
+  @Get()
+  root() {
+    const { request } = this.httpAdapterHost.httpAdapter;
+    console.log(`Request path: ${request.url}`);
+    return 'Hello World!';
+  }
+}
+在上面的示例中，我们注入了 HttpAdapterHost 并在 root() 方法中使用它来获取当前请求对象。然后，我们记录请求的 URL 并返回简单的 "Hello World!" 响应。
+
+请注意，这只是 HttpAdapterHost 类的一种用法。具体使用方式取决于您的应用程序需求和设计。
+
+
+
+
+2023/4/21 10:24:22
+
+switchToHttp()也能获取request response  
+
+
+2023/4/21 10:24:44
+
+switchToHttp()是一个Nest.js框架提供的方法，用于获取到HTTP请求和响应对象。在Nest.js中，每个请求都会创建一个上下文对象，其中包含了当前请求和响应对象。通过switchToHttp()方法可以将当前的执行上下文切换到HTTP上下文中，从而获取到当前的请求和响应对象。
+
+具体地说，在控制器、拦截器或管道等Nest.js的中间件中，我们可以使用switchToHttp()方法来访问当前请求和响应对象。例如，在控制器方法中，可以使用以下代码来获取请求和响应对象：
+
+@Get()
+async findAll(@Req() request, @Res() response) {
+  const httpContext = context.switchToHttp();
+  const httpRequest = httpContext.getRequest();
+  const httpResponse = httpContext.getResponse();
+
+  // access to the request and response objects
+}
+这段代码中，我们首先使用@Req()和@Res()装饰器来获取到请求和响应对象，并随后使用switchToHttp()方法获取到HTTP上下文对象。通过调用getRequest()和getResponse()方法，就可以获得当前的请求和响应对象了。
+
+
+
+
+2023/4/21 10:24:51
+
+httpAdapter.reply(response, responseBody, httpStatus);
+
+
+2023/4/21 10:25:02
+
+这个代码片段出现在一个网络服务中，其中httpAdapter是一个处理HTTP请求和响应的类或模块。该方法reply()用于将指定的响应(response)、响应体(responseBody)和HTTP状态码(httpStatus)发送回客户端。
+
+具体来说，当客户端发起一个 HTTP 请求时，服务器会使用 httpAdapter 处理该请求，并生成一个包含响应体和 HTTP 状态码的响应对象。接着，使用 reply() 方法将响应发送回客户端，告诉客户端请求的处理结果如何。
+```
+
+
+
+- 自定义Filter
+
+```javascript
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
+  LoggerService,
+} from '@nestjs/common';
+import { HttpAdapterHost } from '@nestjs/core';
+import * as requestIP from 'request-ip';
+
+@Catch()
+export class ALLExceptionFilter implements ExceptionFilter {
+  constructor(
+    private readonly logger: LoggerService,
+    private readonly httpAdapterHost: HttpAdapterHost,
+  ) {}
+  catch(exception: any, host: ArgumentsHost) {
+    const { httpAdapter } = this.httpAdapterHost;
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+    const request = ctx.getRequest();
+
+    const httpStatus =
+      exception instanceof HttpException
+        ? exception.getStatus()
+        : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    const responseBody = {
+      query: request.query,
+      params: request.params,
+      ip: requestIP.getClientIp(request),
+      timestamp: new Date().toISOString(),
+    };
+
+    this.logger.error('[Tommy]', responseBody);
+    //   使用 reply() 方法将响应发送回客户端，告诉客户端请求的处理结果如何。
+    httpAdapter.reply(response, responseBody, httpStatus);
+  }
+}
+
+```
+
+
+
+
+
+### 设置成全局Filter(全局过滤器有且只有一个)
+
+- main.ts
+
+```typescript
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { createLogger } from 'winston';
+import * as winston from 'winston';
+import { WinstonModule, utilities } from 'nest-winston';
+import 'winston-daily-rotate-file';
+import { HttpExceptionFilter } from './filters/http-exception.filter';
+
+async function bootstrap() {
+  const instance = createLogger({
+    transports: [
+      new winston.transports.Console({
+        level: 'info',
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          utilities.format.nestLike(),
+          // winston.format.simple(),
+        ),
+      }),
+
+      new winston.transports.DailyRotateFile({
+        level: 'warn',
+        dirname: 'logs',
+        filename: 'application-%DATE%.log',
+        datePattern: 'YYYY-MM-DD-HH',
+        zippedArchive: true,
+        maxSize: '20m',
+        maxFiles: '14d',
+        format: winston.format.combine(
+          winston.format.timestamp(),
+          winston.format.simple(),
+        ),
+      }),
+    ],
+  });
+
+  const logger = WinstonModule.createLogger({ instance });// logger的类型是 LoggerService
+
+  const app = await NestFactory.create(AppModule, {
+    logger: logger,
+  });
+  // 全局filte只有一个
+  app.useGlobalFilters(new HttpExceptionFilter(logger)); // 设置全局Filgerbing并计入日志
+  await app.listen(3000);
+  console.log(`Application is running on: ${await app.getUrl()}`);
+}
+bootstrap();
+
+
+```
+
+
+
+## 数据库迁移
+

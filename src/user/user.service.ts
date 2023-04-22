@@ -61,4 +61,20 @@ export class UserService {
       relations: ['user'],
     });
   }
+
+  findLogsByGroup(id: number) {
+    return (
+      this.logsRepository
+        .createQueryBuilder('logs')
+        .select('logs.result, COUNT(logs.result) as count')
+        // .addSelect('COUNT("logs.result")', 'count')
+        .leftJoinAndSelect('logs.user', 'user') // ORM精髓
+        .where('user.id = :id', { id })
+        .groupBy('logs.result')
+        .getRawMany()
+    );
+    // return this.usersRepository.query(
+    //   'select logs.result, COUNT(logs.result) as rest from logs, user where user.id = logs.user_id and user.id = 1 group by logs.result',
+    // );
+  }
 }

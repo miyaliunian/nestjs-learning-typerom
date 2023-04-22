@@ -1,0 +1,26 @@
+/*
+ * @Author: 米亚流年 354849262@qq.com
+ * @Date: 2023-04-21 11:12:22
+ * @LastEditors: 米亚流年 354849262@qq.com
+ * @LastEditTime: 2023-04-21 11:14:17
+ * @FilePath: /nest-end/src/roles/roles.service.spec.ts
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+ */
+import { Test, TestingModule } from '@nestjs/testing';
+import { RolesService } from './roles.service';
+
+describe('RolesService', () => {
+  let service: RolesService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [RolesService],
+    }).compile();
+
+    service = module.get<RolesService>(RolesService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
