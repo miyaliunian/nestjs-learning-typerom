@@ -5,7 +5,7 @@ import Configuration from './configuration';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { LogsModule } from './logs/logs.module';
 import { RolesModule } from './roles/roles.module';
-import ormconfig from '../ormconfig';
+import { connectionParams } from '../ormconfig';
 
 @Global() // 这个地方很关键
 @Module({
@@ -50,7 +50,7 @@ import ormconfig from '../ormconfig';
     //       logging: process.env.NODE_ENV === 'development', // 打印所有日志
     //     } as TypeOrmModuleOptions),
     // }),
-    TypeOrmModule.forRoot(ormconfig),
+    TypeOrmModule.forRoot(connectionParams),
     UserModule,
     LogsModule,
     RolesModule,

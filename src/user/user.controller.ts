@@ -1,13 +1,26 @@
-import { Controller, Get, Inject, LoggerService, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Inject,
+  LoggerService,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from './user.service';
 import { User } from './user.entity';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { getUserQueryDTO } from './dto/get-user.dto';
 
 @Controller('user')
 export class UserController {
   constructor(
-    // private configService: ConfigService, // 设置配置文件后 就不要需要
+    private configService: ConfigService, // 设置配置文件后 就不要需要
     private userService: UserService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER)
     private readonly logger: LoggerService,
@@ -15,30 +28,47 @@ export class UserController {
     this.logger.log('User Controller init');
   }
 
+  @Get()
+  getUsers(@Query() query: getUserQueryDTO) {
+    return this.userService.findAll(query);
+  }
+
   @Get('/:id')
-  getUsers() {
-    return this.userService.findAll();
+  getUser(@Param() params: { id: number }) {
+    const { id } = params;
+    return this.userService.findOne(id);
   }
 
   @Post()
-  addUser() {
-    const user = { username: '测试插入', password: '133455' } as User;
-    return this.userService.create(user);
+  addUser(@Body() userDTO: User, @Req() req) {
+    return this.userService.create(userDTO);
   }
 
-  @Get('/profile')
-  getUserProfile(): any {
-    return this.userService.findProfile(1);
+  @Delete('/:id')
+  deleteUser(@Param('id') id: number) {
+    return this.userService.remove(id);
   }
 
+  @Get('/profile/:id')
+  getUserProfile(@Param() params: { id: number }): any {
+    const { id } = params;
+    return this.userService.findProfile(id);
+  }
+
+  @Patch('/:id')
+  updateUser(@Body() dto: any, @Param('id') id: number) {
+    return this.userService.update(id, dto as User);
+  }
+
+  // todo
+  // logs module
   @Get('/logs')
-  getUserLogs(): any {
+  getUserLogs(@Param() Param): any {
     return this.userService.findUserLogs(1);
   }
 
   @Get('/logsByGroup')
   getLogsByGroup() {
-    this.logger.log('logsByGroup请求成功');
     return this.userService.findLogsByGroup(1);
   }
 }
